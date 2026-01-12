@@ -504,6 +504,27 @@ export class BrowserManager {
       return;
     }
 
+    // Connect to remote browser via CDP if URL provided
+    if (options.cdpUrl) {
+      this.browser = await chromium.connectOverCDP(options.cdpUrl);
+
+      // Get existing context or create new one
+      const existingContexts = this.browser.contexts();
+      const context = existingContexts[0] || await this.browser.newContext({
+        viewport: options.viewport ?? { width: 1280, height: 720 },
+      });
+      context.setDefaultTimeout(10000);
+      this.contexts.push(context);
+
+      // Get existing page or create new one
+      const existingPages = context.pages();
+      const page = existingPages[0] || await context.newPage();
+      this.pages.push(page);
+      this.activePageIndex = 0;
+      this.setupPageTracking(page);
+      return;
+    }
+
     // Select browser type
     const browserType = options.browser ?? 'chromium';
     const launcher =

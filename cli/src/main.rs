@@ -52,12 +52,19 @@ fn main() {
         exit(1);
     }
 
-    // If --headed flag is set, send launch command first to switch to headed mode
-    if flags.headed {
-        let launch_cmd = json!({ "id": gen_id(), "action": "launch", "headless": false });
+    // If --headed flag or --cdp-url is set, send launch command first
+    if flags.headed || flags.cdp_url.is_some() {
+        let mut launch_cmd = json!({
+            "id": gen_id(),
+            "action": "launch",
+            "headless": !flags.headed
+        });
+        if let Some(ref url) = flags.cdp_url {
+            launch_cmd["cdpUrl"] = json!(url);
+        }
         if let Err(e) = send_command(launch_cmd, &flags.session) {
             if !flags.json {
-                eprintln!("\x1b[33m⚠\x1b[0m Could not switch to headed mode: {}", e);
+                eprintln!("\x1b[33m⚠\x1b[0m Could not launch/connect: {}", e);
             }
         }
     }
