@@ -18,6 +18,7 @@ const launchSchema = baseCommandSchema.extend({
     })
     .optional(),
   browser: z.enum(['chromium', 'firefox', 'webkit']).optional(),
+  cdpUrl: z.string().optional(),
 });
 
 const navigateSchema = baseCommandSchema.extend({
