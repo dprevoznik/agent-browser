@@ -39,6 +39,7 @@ interface PageError {
  */
 export class BrowserManager {
   private browser: Browser | null = null;
+  private connectedCdpUrl: string | null = null;
   private contexts: BrowserContext[] = [];
   private pages: Page[] = [];
   private activePageIndex: number = 0;
@@ -496,9 +497,19 @@ export class BrowserManager {
 
   /**
    * Launch the browser with the specified options
-   * If already launched, this is a no-op (browser stays open)
+   * If already launched with same config, this is a no-op
    */
   async launch(options: LaunchCommand): Promise<void> {
+    // If requesting same CDP URL, reuse existing connection
+    if (this.browser && options.cdpUrl && options.cdpUrl === this.connectedCdpUrl) {
+      return;
+    }
+
+    // If browser exists but different config requested, close first
+    if (this.browser && (options.cdpUrl !== this.connectedCdpUrl)) {
+      await this.close();
+    }
+
     // If already launched, don't relaunch
     if (this.browser) {
       return;
@@ -507,6 +518,7 @@ export class BrowserManager {
     // Connect to remote browser via CDP if URL provided
     if (options.cdpUrl) {
       this.browser = await chromium.connectOverCDP(options.cdpUrl);
+      this.connectedCdpUrl = options.cdpUrl;
 
       // Get existing context or create new one
       const existingContexts = this.browser.contexts();
@@ -700,6 +712,7 @@ export class BrowserManager {
       this.browser = null;
     }
 
+    this.connectedCdpUrl = null;
     this.activePageIndex = 0;
     this.refMap = {};
     this.lastSnapshot = '';
